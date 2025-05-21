@@ -1,6 +1,27 @@
 require 'yaml'
 
+module BasicSerializable
+  @@serializer = YAML
+
+  def serialize
+    obj = {}
+    instance_variables.map do |var|
+      obj[var] = instance_variable_get(var)
+    end
+    @@serializer.dump obj
+  end
+
+  def unserialize(string)
+    obj = @@serializer.load(string)
+    obj.keys.each do |key|
+      instance_variable_set(key, obj[key])
+    end
+    obj
+  end
+end
+
 class Person
+  include BasicSerializable
   attr_accessor :name, :age, :gender
 
   def initialize(name, age, gender)
@@ -8,25 +29,16 @@ class Person
     @age = age
     @gender = gender
   end
-
-  def to_yaml
-    YAML.dump({
-                name: @name,
-                age: @age,
-                gender: @gender
-              })
-  end
-
-  def self.from_yaml(string)
-    data = YAML.load string
-    p data
-    new(data[:name], data[:age], data[:gender])
-  end
 end
 
 p = Person.new 'David', 28, 'male'
-p p.to_yaml
-p = Person.from_yaml(p.to_yaml)
-puts "Name: #{p.name}"
+pers = Person.new 'sabir', 41, 'male'
+p p.instance_variables
+p p.serialize
+p pers.serialize
+p p.unserialize(pers.serialize)
+p pers.unserialize(p.serialize)
+# p pers
+puts "Name: #{pers.name}"
 puts "Age: #{p.age}"
 puts "Gender: #{p.gender}"
